@@ -10,3 +10,4 @@ extern const int HEIGHT;
 extern const int FRAMERATE;
 
 extern Vector2 GRAVITY;
+extern float RESTITUTION;
