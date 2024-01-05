@@ -11,9 +11,11 @@ class Ball
         Vector2 acceleration; // pixels/second^2
         Vector2 force; // N (kg pixels/second^2)
         float mass; // kg
-        float radius; // pixels
         
-        Ball(Vector2 pos, float mass);
+        float radius; // pixels
+        Color color; // (r, g, b, a)
+
+        Ball(Vector2 pos, float mass, Color color);
 
         // Called each frame to calculate the acceleration (from forces), the velocity (from acceleration), and the position (from velocity)
         void resolve(float delta_time);

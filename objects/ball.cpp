@@ -6,10 +6,10 @@
 
 #include <iostream>
 
-Ball::Ball(Vector2 pos, float kg) : 
+Ball::Ball(Vector2 pos, float kg, Color col) : 
     position{pos}, velocity{}, acceleration{}, force{},
     mass{kg},
-    radius{7.5f}
+    radius{7.5f}, color{col}
 {
     // Converting GRAVITY to force: f=ma
     this->addForce(Vector2Scale(GRAVITY,mass)); // force{} could be initialized with GRAVITY, but we're doing it this way as the logic is easier to follow
@@ -32,7 +32,7 @@ void Ball::resolve(float delta_time)
     this->position = Vector2Clamp(this->position, Vector2Zero(), CLITERAL(Vector2){WIDTH-this->radius,HEIGHT-this->radius}); // Clamping ball to screen
 
     // Draw Ball
-    DrawCircleV(this->position, radius, RED);
+    DrawCircleV(this->position, this->radius, this->color);
 }
 
 void Ball::addForce(Vector2 v)
