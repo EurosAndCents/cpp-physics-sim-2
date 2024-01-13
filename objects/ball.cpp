@@ -1,6 +1,6 @@
 #include "ball.h"
 
-#include "constants.h"
+#include "../utility/constants.h"
 #include INCLUDE_RAYLIB
 #include INCLUDE_RAYMATH
 
@@ -25,11 +25,10 @@ void Ball::resolve(float delta_time)
 
     // Calculate Velocity (v=u+at)
     this->velocity = Vector2Add(this->velocity, this->acceleration);
-    //Vector2 velocity_deltatime = Vector2Scale(this->velocity, delta_time); // We're storing this in a different variable as it is stored as per second in Ball
 
     // Calculate Position (s=ut+0.5at^2 -> s=vt as acceleration has already been resolved)
     this->position = Vector2Add(this->position, Vector2Scale(velocity, delta_time));
-    this->position = Vector2Clamp(this->position, Vector2Zero(), CLITERAL(Vector2){WIDTH-this->radius,HEIGHT-this->radius}); // Clamping ball to screen
+    this->position = Vector2Clamp(this->position, CLITERAL(Vector2){this->radius,this->radius}, CLITERAL(Vector2){WIDTH-this->radius,HEIGHT-this->radius}); // Clamping ball to screen
 
     // Draw Ball
     DrawCircleV(this->position, this->radius, this->color);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "constants.h"
+#include "../utility/constants.h"
 #include INCLUDE_RAYLIB
 
 class Ball

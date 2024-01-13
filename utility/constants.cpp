@@ -8,4 +8,4 @@ const int HEIGHT{600};
 const int FRAMERATE{60};
 
 Vector2 GRAVITY{0.0f,9.81f}; // pixels/second^2
-float RESTITUTION{0.4f}; // -e=v/u
+float RESTITUTION{0.6f}; // -e=v/u

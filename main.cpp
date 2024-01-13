@@ -1,6 +1,7 @@
 #include "./objects/ball.h"
+#include "./utility/vector_utility.h"
 
-#include "constants.h"
+#include "./utility/constants.h"
 #include INCLUDE_RAYLIB
 #include INCLUDE_RAYMATH
 
@@ -16,65 +17,64 @@ void resolveCollisions(std::vector<std::pair<std::shared_ptr<Ball>, Vector2>>& b
         Vector2 normal = std::get<1>(collision_event);
 
         if(Vector2Equals(normal, Vector2Zero())) continue; // If no collision normal, skip collision loop
-
+        
         Vector2 v = Vector2Reflect(ball->velocity,normal); // -e=v/u turns to e=v/u (as it is reflected)
-        v = Vector2Scale(v, RESTITUTION); // e=v/u -> v=e*u
+        
+        // We're multiplying normal by itself so we know which component of the resulting velocity (x or y) to affect with the coefficient of restitution
+        Vector2 normal_pos{Vector2Multiply(normal,normal)};
+        v = Vector2Multiply(v, Vector2Scale(normal_pos,RESTITUTION)); // e=v/u -> v=e*u
 
-        ball->velocity = v;
+        // We're inverting the normal so we know which component of the resulting velocity to keep
+        normal_pos = CLITERAL(Vector2){normal_pos.y,normal_pos.x};
+        v = Vector2Add(v, Vector2Multiply(normal_pos, ball->velocity));
+        
+        ball->velocity = v; // Update velocity
     }
 }
 
 // Check ball (a) against each bound on the screen and return a std::pair(unique_ptr<Ball>&, Vector2 normal)
-std::pair<std::shared_ptr<Ball>,Vector2> ballBoundCollision(std::vector<std::shared_ptr<Ball>>& ball_instances, 
-    std::shared_ptr<Ball>& a) 
+std::pair<std::shared_ptr<Ball>,Vector2> ballBoundCollision(std::vector<std::shared_ptr<Ball>>& ball_instances,
+    std::shared_ptr<Ball>& a)
 {
     Vector2 collision_normal{Vector2Zero()};
 
-    // If outside of left bound
-    if((a->position.x <= a->radius)) {
-        collision_normal.x = 1;
+    // If outside of left bound or right bound
+    if((a->position.x <= a->radius) || (a->position.x >= WIDTH-a->radius)) {
+        collision_normal.x = (a->position.x <= a->radius) ? 1 : -1;
     }
 
-    // If outside of right bound
-    if((a->position.x >= WIDTH-a->radius)) {
-        collision_normal.x = -1;
+    // If outside of top bound or bottom bound
+    else if((a->position.y <= a->radius) || (a->position.y >= HEIGHT-a->radius)) {
+        collision_normal.y = (a->position.y <= a->radius) ? 1 : -1;
     }
 
-    // If outside of top bound
-    if((a->position.y <= a->radius)) {
-        collision_normal.y = 1;
-    }
-    
-    // If outside of bottom bound
-    if((a->position.y >= HEIGHT-a->radius)) {
-        collision_normal.y = -1;
-    }
+    std::cout << "normal of " << a << " | velo: (" << a->velocity.x << ", " << a->velocity.y << ")\n";
 
     return std::make_pair(a, collision_normal);
 }
 
-// Check ball (a) against each ball and returns whichever ball it is colliding with
-std::pair<std::shared_ptr<Ball>,std::shared_ptr<Ball>> ballBallCollision(std::vector<std::shared_ptr<Ball>>& ball_instances, 
-    std::vector<std::pair<std::shared_ptr<Ball>,std::shared_ptr<Ball>>>& ballball_collisions, 
-    std::shared_ptr<Ball>& a)
-{ 
-    // Iterating through ball_instances : a is subject, b is ball in ball_instances
-    for(auto& b : ball_instances) {
-        if(&a == &b) continue; // Guard clause -- no ball will have collision with itself
+// // Check ball (a) against each ball and returns whichever ball it is colliding with
+// std::pair<std::shared_ptr<Ball>,std::shared_ptr<Ball>> ballBallCollision(std::vector<std::shared_ptr<Ball>>& ball_instances, 
+//     std::vector<std::pair<std::shared_ptr<Ball>,std::shared_ptr<Ball>>>& ballball_collisions, 
+//     std::shared_ptr<Ball>& a)
+// { 
+//     // Iterating through ball_instances : a is subject, b is ball in ball_instances
+//     for(auto& b : ball_instances) {
+//         if(&a == &b) continue; // Guard clause -- no ball will have collision with itself
         
-        // If distance of A<->b <= radius a + radius b, then the balls are colliding
-        if(Vector2Distance(a->position,b->position) <= (a->radius,b->radius)) {
-            bool ifExists{};
+//         // If distance of A<->b <= radius a + radius b, then the balls are colliding
+//         if(Vector2Distance(a->position,b->position) <= (a->radius,b->radius)) {
+//             bool ifExists{};
 
-            // Check if std::pair(b,a) doesn't already exist
-            for(auto& x : ballball_collisions) {
-                if(x == std::make_pair(b,a)) ifExists = true;
-            }
-            if(!ifExists) return std::make_pair(a,b);
-        }
-    }
-    return std::make_pair(a,nullptr);
-}
+//             // Check if std::pair(b,a) doesn't already exist
+//             for(auto& x : ballball_collisions) {
+//                 if(x == std::make_pair(b,a)) ifExists = true;
+//             }
+//             if(!ifExists) return std::make_pair(a,b);
+//         }
+//     }
+//     return std::make_pair(a,nullptr);
+// }
 
 int main()
 {
@@ -98,19 +98,22 @@ int main()
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
-        // Add Force Downwards
-/*         if(IsMouseButtonHeld(MOUSE_BUTTON_LEFT)) {
-            DrawVector(ball_instances[ball_selection]->position)
+        // Add impulse
+        Vector2 impulse_to_apply{getVectorDirection(GetMousePosition(),ball_instances[ball_selection]->position)};
+        impulse_to_apply = Vector2Scale(impulse_to_apply, 500.0f);
+        if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+            drawVector(ball_instances[ball_selection]->position, GetMousePosition(), GREEN, 50.0f); // Preview impulse
         } else if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-            ball_instances[0]->addForce(CLITERAL(Vector2){0.0f,-1.0f});
-        } */
-
-        if(IsKeyPressed(KEY_SPACE)) {
-            ball_instances[ball_selection]->color = RED;
-            ball_selection++;
-            if(ball_selection >= ball_instances.size()) ball_selection = 0;
+            ball_instances[ball_selection]->addImpulse(impulse_to_apply,true); // Add impulse
         }
-        ball_instances[ball_selection]->color = GREEN;
+
+        // Change Selection on Space
+        if(IsKeyPressed(KEY_SPACE)) {
+            ball_instances[ball_selection]->color = RED; // Reset unselected Ball to red
+            ball_selection++;
+            if(ball_selection >= ball_instances.size()) ball_selection = 0; // Wrap around if outside of vector size
+        }
+        ball_instances[ball_selection]->color = GREEN; // Set selected Ball to green
 
         ballbound_collisions_to_occur.clear();
         ballball_collisions_to_occur.clear();
@@ -122,7 +125,9 @@ int main()
             ballbound_collisions_to_occur.push_back(ballBoundCollision(ball_instances, ball));
 
             // Handle Ball<->Ball collisions
-            ballball_collisions_to_occur.push_back(ballBallCollision(ball_instances, ballball_collisions_to_occur, ball));
+            // // ballball_collisions_to_occur.push_back(ballBallCollision(ball_instances, ballball_collisions_to_occur, ball));
+
+            //std::cout << ball->velocity.x << ", " << ball->velocity.y << '\n';
         }
         // Resolve collisions
         resolveCollisions(ballbound_collisions_to_occur);
