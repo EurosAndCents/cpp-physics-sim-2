@@ -84,9 +84,8 @@ int main()
     // !-- We're using std::shared_ptr so that std::vector has ownership of the Ball instances, meaning they are automatically
     //     deleted as the vector goes out of scope, but so that functions can duplicate the pointers.
     std::vector<std::shared_ptr<Ball>> ball_instances{};
-    ball_instances.push_back(std::make_shared<Ball>(CLITERAL(Vector2){50.0f,50.0f}, 20.0f, RED));
-    ball_instances.push_back(std::make_shared<Ball>(CLITERAL(Vector2){100.0f,50.0f}, 20.0f, RED));
-    ball_instances.push_back(std::make_shared<Ball>(CLITERAL(Vector2){150.0f,50.0f}, 20.0f, RED));
+    ball_instances.push_back(std::make_shared<Ball>(CLITERAL(Vector2){50.0f,50.0f}, 3.0f, RED));
+    ball_instances.push_back(std::make_shared<Ball>(CLITERAL(Vector2){100.0f,50.0f}, 5.0f, RED));
 
     unsigned int ball_selection{};
 
